@@ -30,9 +30,10 @@ function update()
 	var nextMove = pathAI.FindPath(snake.bits);
 	var moveX = nextMove.coordinates[0]-snake.bits[0][0];
 	var moveY = nextMove.coordinates[1]-snake.bits[0][1];
-	moveX = moveX>gridNum-1? 0:moveX%gridNum 
-	moveY = moveY>gridNum-1? 0:moveY%gridNum 
+	moveX = moveX>gridNum-1? -1:moveX%gridNum 
+	moveY = moveY>gridNum-1? -1:moveY%gridNum 
 	var direction = [moveX,moveY];
+	console.log(direction);
 	if (direction[0]!=0 || direction[1]!=0)
 		snake.direction = direction;
 	if (snake.bits.length == gridNum*gridNum)

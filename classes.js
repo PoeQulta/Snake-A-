@@ -54,7 +54,7 @@ class Snake
 		var newBit = this.bits[0].map(function (num,id){return (num+direction[id])>=0? (num+direction[id])%gridNum:gridNum+(num+direction[id])%gridNum});
 		if (this.bits.map(function(o){  return (o[0] == newBit[0] && o[1] == newBit[1])}).includes(true))
 		{
-			console.log("bitten");
+			location.reload();
 		}
 		else
 		{
