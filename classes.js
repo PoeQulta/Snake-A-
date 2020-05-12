@@ -1,3 +1,14 @@
+function copy(o)
+{
+	var output, v, key;
+	output = [];
+	for(key in o)
+	{
+		v = o[key];
+		output[key] = (typeof v ==="object")? copy(v):v;
+	}
+	return output;
+}
 function RandInt(start,end)
 	{
 		m = 0x80000000;
@@ -58,12 +69,10 @@ class Snake
 		}
 		else
 		{
+			this.bits.unshift(newBit);
 			if (newBit[0] != fruit.location[0] || newBit[1] != fruit.location[1])
 				this.oldBit = this.bits.pop();
-			else
-				fruit = new Fruit(this,gridSize);
-			this.bits.unshift(newBit);
-			return fruit;
+			
 		}
 	}
 	drawSelf()
@@ -105,7 +114,7 @@ class Edge
 }
 class Node
 {
-	constructor(coordinates,parent,goal)
+	constructor(coordinates,parent,goal,bits)
 	{
 		this.coordinates = coordinates;
 		this.goal = goal;
@@ -118,10 +127,13 @@ class Node
 		this.h = deltaX+deltaY;
 		this.g = parent.g + 1;
 		this.f = this.h + this.g;
+		this.bits = bits;
 	}
-	getSuccessors(blockedCoords)
+	getSuccessors()
 	{
-		
+		var newBlocked = copy(this.bits);
+		newBlocked.pop();
+		newBlocked.unshift(this.coordinates);
 		this.successors = [];
 		var coordinates = this.coordinates;
 		var childrenCoords = [[coordinates[0]+1>gridNum-1? 0:coordinates[0]+1,coordinates[1]],
@@ -130,8 +142,8 @@ class Node
 		[coordinates[0],coordinates[1]-1<0? gridNum:coordinates[1]-1]]
 		for (var i = childrenCoords.length - 1; i >= 0; i--) {
 			var coords = childrenCoords[i];
-			var node = new Node(coords,this,this.goal);
-			if (blockedCoords.find(o => o[0] == node.coordinates[0] && o[1] == node.coordinates[1]) != undefined)
+			var node = new Node(coords,this,this.goal,newBlocked);
+			if (newBlocked.find(o => o[0] == node.coordinates[0] && o[1] == node.coordinates[1]) != undefined)
 				node.f = Infinity;
 			this.successors.push(node);
 		}
@@ -140,28 +152,29 @@ class Node
 }
 class A_Star
 {
-	constructor(start,end)
+	constructor(start,end,snake)
 	{
-		var StartNode = new Node(start,{g:-1},end);
+		var StartNode = new Node(start,{g:-1},end,snake.bits);
 		this.openList = [StartNode];
 		this.closedList = [];
 		this.goal = end;
 	}
-	FindPath(blockedCoords)
+	FindPath()
 	{
-		var currNode
-		var minimumF
-		while(this.openList.length !=0)
+		var currNode;
+		var minimumF;
+		var counter = 0;
+		while(this.openList.length !=0 && counter<5000)
 		{
 			minimumF = Math.min(...this.openList.map(node => node.f));
 			currNode = this.openList.find(node => node.f == minimumF);
-			currNode.getSuccessors(blockedCoords);
+			currNode.getSuccessors();
 			
 			for (var i = currNode.successors.length - 1; i >= 0; i--) 
 			{
 				var node = currNode.successors[i];
 				if (node.coordinates[0] == this.goal[0] &&node.coordinates[1] == this.goal[1])
-					return this.getNextMove(node);
+					return this.getMoves(node);
 				else
 				{
 					var openDuplicate = this.openList.find(o => o.coordinates[0] == node.coordinates[0] && o.coordinates[1] == node.coordinates[1]);
@@ -176,16 +189,20 @@ class A_Star
 			}
 			this.closedList.push(currNode);
 			this.openList.splice(this.openList.indexOf(currNode),1);
+			counter++;
 		}
 		return null;
+
 	}
-	getNextMove(node)
+	getMoves(node)
 	{
+		var moveStack = [node];
 		while (true)
 		{
 			var parent = node.parent;
+			moveStack.unshift(parent);
 			if (parent.parent.g == -1)
-				return node;
+				return moveStack;
 			else
 				node = node.parent;
 		}
